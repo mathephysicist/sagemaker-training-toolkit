@@ -561,7 +561,12 @@ class Environment(mapping.MappingMixin):  # pylint:disable=too-many-public-metho
 
         self._master_hostname = list(hosts)[0]
         self._is_master = current_host == self._master_hostname
-
+        
+        self._overrides = additional_framework_parameters.get(params.SAGEMAKER_OVERRIDES,{})
+        if self.overrides.get('params',{}) :
+            self.overrides['params'] = mapping.to_cmd_args(self.overrides.get('params',{}),self.overrides.get('args',False))
+        
+        
     @property
     def model_dir(self):  # type: () -> str
         """The directory where models should be saved.
@@ -615,7 +620,16 @@ class Environment(mapping.MappingMixin):  # pylint:disable=too-many-public-metho
             str: Full path location of the user provided module.
         """
         return self._module_dir
+    
+    @property
+    def overrides(self):  # type: () -> dict
+        """The full path location of the user provided module.
 
+        Returns:
+            str: Full path location of the user provided module.
+        """
+        return self._overrides
+    
     @property
     def log_level(self):  # type: () -> int
         """Environment logging level.
@@ -694,7 +708,7 @@ class Environment(mapping.MappingMixin):  # pylint:disable=too-many-public-metho
         Returns:
             (list): List of cmd arguments.
         """
-        return mapping.to_cmd_args(self.hyperparameters)
+        return mapping.to_cmd_args(self.hyperparameters,self.overrides.get('args',False))
 
     def to_env_vars(self):
         """Environment variable representation of the training environment.
@@ -727,6 +741,7 @@ class Environment(mapping.MappingMixin):  # pylint:disable=too-many-public-metho
             "training_env": dict(self),
             "user_args": self.to_cmd_args(),
             "output_intermediate_dir": self.output_intermediate_dir,
+            "overrides":self.overrides
         }
 
         for name, path in self.channel_input_dirs.items():

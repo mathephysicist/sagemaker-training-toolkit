@@ -61,7 +61,7 @@ def to_env_vars(mapping):  # type: (dict) -> dict
     return {format_key(k): format_value(v) for k, v in mapping.items()}
 
 
-def to_cmd_args(mapping):  # type: (dict) -> list
+def to_cmd_args(mapping,override=False):  # type: (dict) -> list
     """Transform a dictionary in a list of cmd arguments.
     Example:
         >>>args = mapping.to_cmd_args({'model_dir': '/opt/ml/model', 'batch_size': 25})
@@ -75,15 +75,20 @@ def to_cmd_args(mapping):  # type: (dict) -> list
     """
 
     sorted_keys = sorted(mapping.keys())
-
-    def arg_name(obj):
+    
+        
+    def arg_name(obj,override=override):
         string = _decode(obj)
-        if string:
+        
+        if string and (not override):
             return u"--%s" % string if len(string) > 1 else u"-%s" % string
+        elif string :
+            return u"%s" % string           
         else:
             return u""
 
-    arg_names = [arg_name(argument) for argument in sorted_keys]
+    arg_names = [arg_name(argument,override) for argument in sorted_keys]
+    
 
     def arg_value(value):
         if hasattr(value, "items"):
@@ -94,8 +99,11 @@ def to_cmd_args(mapping):  # type: (dict) -> list
     arg_values = [arg_value(mapping[key]) for key in sorted_keys]
 
     items = zip(arg_names, arg_values)
-
-    return [item for item in itertools.chain.from_iterable(items)]
+    
+    items = [item for item in itertools.chain.from_iterable(items)]
+    items = [item for item in items if item != ""]
+    
+    return items
 
 
 def _decode(obj):  # type: (bytes or str or unicode or object) -> unicode # noqa ignore=F821

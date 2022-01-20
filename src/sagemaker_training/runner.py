@@ -16,8 +16,7 @@ runner type.
 from __future__ import absolute_import
 
 import enum
-
-from sagemaker_training import environment, mpi, params, process, smdataparallel
+from sagemaker_training import environment, mapping, mpi, params, process, smdataparallel
 
 
 class RunnerType(enum.Enum):
@@ -31,7 +30,6 @@ class RunnerType(enum.Enum):
 ProcessRunnerType = RunnerType.Process
 MPIRunnerType = RunnerType.MPI
 SMDataParallelRunnerType = RunnerType.SMDataParallel
-
 
 def get(identifier, user_entry_point=None, args=None, env_vars=None, extra_opts=None):
     """Get the process runner based on the runner type.
@@ -57,10 +55,14 @@ def _get_by_runner_type(
 ):
     env = environment.Environment()
     user_entry_point = user_entry_point or env.user_entry_point
+    
+        
+        
+        
     args = args or env.to_cmd_args()
     env_vars = env_vars or env.to_env_vars()
     mpi_args = extra_opts or {}
-
+    
     # Default to single process for CPU
     default_processes_per_host = int(env.num_gpus) if int(env.num_gpus) > 0 else 1
     processes_per_host = _mpi_param_value(

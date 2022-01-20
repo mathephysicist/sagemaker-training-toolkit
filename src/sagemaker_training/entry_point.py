@@ -96,6 +96,37 @@ def run(
 
     _wait_hostname_resolution()
 
+    env = environment.Environment()
+    if env.overrides and (('custom_launch_module' in env.overrides) or ('custom_launch_cmd' in env.overrides)) :
+        custom_runner = None
+        if 'custom_launch_module' in env.overrides :
+            import importlib,os
+            module = env.overrides['custom_launch_module']
+            module,method = module['module'],module['method']
+            custom_runner = importlib.import_module(module)
+            custom_runner = getattr(custom_runner,method)
+            custom_runner = custom_runner(runner.get(runner_type, user_entry_point, args, env_vars, extra_opts),
+                                          env.overrides.get('params',[]))
+            
+        if 'custom_launch_cmd' in env.overrides :
+            def custom_launch(cls,command):
+                def new_launch(*args,**kwargs):
+                    return command.split(' ')
+                setattr(cls,'_create_command',new_launch)
+                return cls
+            
+            if custom_runner :
+                print('warning you specified a module that wraps runner.get' + \
+                      ', and you specified an override of runners run cmd may not behave as expected')
+                custom_runner = custom_launch(custom_runner,env.overrides['custom_launch_cmd'])
+            else :
+                custom_runner = custom_launch(runner.get(runner_type, user_entry_point, args, env_vars, extra_opts),
+                                              env.overrides['custom_launch_cmd'])
+            
+        return custom_runner.run(
+            wait, capture_error
+        )
+    
     return runner.get(runner_type, user_entry_point, args, env_vars, extra_opts).run(
         wait, capture_error
     )

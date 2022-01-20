@@ -74,6 +74,8 @@ def train():
             env.sagemaker_s3_output(), region, endpoint_url=s3_endpoint_url
         )
 
+        
+        
         if env.framework_module:
             framework_name, entry_point_name = env.framework_module.split(":")
 
@@ -89,12 +91,12 @@ def train():
             logging_config.configure_logger(env.log_level)
 
             mpi_enabled = env.additional_framework_parameters.get(params.MPI_ENABLED)
+            
             runner_type = runner.RunnerType.MPI if mpi_enabled else runner.RunnerType.Process
-
             entry_point.run(
                 env.module_dir,
                 env.user_entry_point,
-                env.to_cmd_args(),
+                env.to_cmd_args(override),
                 env.to_env_vars(),
                 runner_type=runner_type,
             )
